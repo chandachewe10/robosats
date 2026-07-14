@@ -462,7 +462,6 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "is_fiat_sent",
             "is_disputed",
             "ur_nick",
-            "ur_nick",
             "maker_locked",
             "taker_locked",
             "escrow_locked",

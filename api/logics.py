@@ -507,7 +507,7 @@ class Logics:
             order.log("Maker bond was <b>unlocked</b>")
             order.log("Taker bond was <b>settled</b>")
             order.log(
-                "<b>The dispute was solved automatically:</b> 'Taker lost dispute', the maker did not write in the chat"
+                "<b>The dispute was solved automatically:</b> 'Taker lost dispute', the taker did not write in the chat"
             )
         else:
             return False
@@ -558,11 +558,11 @@ class Logics:
             robot = user.robot
             robot.num_disputes = robot.num_disputes + 1
             if robot.orders_disputes_started is None:
-                robot.orders_disputes_started = [str(order.id)]
+                robot.orders_disputes_started = str(order.id)
             else:
-                robot.orders_disputes_started = list(
-                    robot.orders_disputes_started
-                ).append(str(order.id))
+                robot.orders_disputes_started = (
+                    f"{robot.orders_disputes_started},{order.id}"
+                )
             robot.save(update_fields=["num_disputes", "orders_disputes_started"])
 
         send_notification.delay(order_id=order.id, message="dispute_opened")
@@ -747,9 +747,6 @@ class Logics:
             valid = cls.create_onchain_payment(
                 order, user, preliminary_amount=context["invoice_amount"]
             )
-            order.log(
-                f"Suggested mining fee is {order.payout_tx.suggested_mining_fee_rate} Sats/vbyte, the swap fee rate is {order.payout_tx.swap_fee_rate}%"
-            )
             if not valid:
                 context["swap_allowed"] = False
                 context["swap_failure_reason"] = (
@@ -760,6 +757,9 @@ class Logics:
                     level="WARN",
                 )
                 return True, context
+            order.log(
+                f"Suggested mining fee is {order.payout_tx.suggested_mining_fee_rate} Sats/vbyte, the swap fee rate is {order.payout_tx.swap_fee_rate}%"
+            )
 
         context["swap_allowed"] = True
         context["suggested_mining_fee_rate"] = float(
@@ -984,7 +984,7 @@ class Logics:
 
         if user.robot.penalty_expiration:
             if user.robot.penalty_expiration > timezone.now():
-                time_out = (user.robot.penalty_expiration - timezone.now()).seconds
+                time_out = (user.robot.penalty_expiration - timezone.now()).total_seconds()
                 return True, time_out
 
         return False, None
@@ -1807,7 +1807,7 @@ class Logics:
             slashed_robot = slashed_bond.sender.robot
             slashed_robot.earned_rewards += slashed_return
             slashed_robot.save(update_fields=["earned_rewards"])
-            slashed_robot_log = "Robot({slashed_robot.id},{slashed_robot.user.username}) was returned {slashed_return} Sats)"
+            slashed_robot_log = f"Robot({slashed_robot.id},{slashed_robot.user.username}) was returned {slashed_return} Sats)"
 
         new_proceeds = int(slashed_satoshis * (1 - reward_fraction))
         order.proceeds += new_proceeds

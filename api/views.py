@@ -551,7 +551,7 @@ class OrderView(viewsets.ViewSet):
                 return self.get(request)
 
             else:
-                Response(new_error(1046), status.HTTP_400_BAD_REQUEST)
+                return Response(new_error(1046), status.HTTP_400_BAD_REQUEST)
 
         # 2) If action is cancel
         elif action == "cancel":
@@ -571,6 +571,10 @@ class OrderView(viewsets.ViewSet):
                     },
                     status.HTTP_200_OK,
                 )
+
+            # A pretaker who cancelled before bonding is no longer the taker,
+            # so we must return early here to avoid a spurious 403 below.
+            return self.get(request)
 
         # Any other action is only allowed if the user is a participant
         elif not (order.maker == request.user or order.taker == request.user):
